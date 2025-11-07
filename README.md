@@ -1,83 +1,91 @@
-PDF & Image Utility (Client-Side)
+# PERHATIAN: Salin SEMUA teks yang ada di antara tanda kutip rangkap tiga (""") di bawah ini.
+# Teks ini adalah kode sumber (RAW MARKDOWN) untuk file README.md Anda.
 
-Aplikasi web sederhana untuk konversi file PDF ke format gambar (PNG/JPG) dan penambahan watermark pada file PDF maupun Gambar (PNG/JPG). Aplikasi ini dirancang untuk berjalan sepenuhnya di sisi klien (client-side) menggunakan JavaScript, sehingga tidak memerlukan server backend untuk pemrosesan file.
+readme_markdown_content = """
+# PDF & Image Utility (Client-Side)
 
-Fitur Utama
+Aplikasi web sederhana untuk konversi file PDF ke format gambar (PNG/JPG) dan penambahan *watermark* pada file PDF maupun Gambar (PNG/JPG). Aplikasi ini dirancang untuk berjalan sepenuhnya di sisi klien (*client-side*) menggunakan JavaScript, sehingga tidak memerlukan server backend untuk pemrosesan file.
 
-Konversi PDF: Konversi setiap halaman PDF menjadi file gambar (PNG) berkualitas tinggi.
+## Fitur Utama
 
-Watermark PDF: Tambahkan teks watermark yang transparan dan berulang (diagonal) atau di tengah pada semua halaman PDF.
+  * **Konversi PDF:** Konversi setiap halaman PDF menjadi file gambar (PNG) berkualitas tinggi.
 
-Watermark Gambar: Tambahkan teks watermark pada file gambar PNG atau JPG.
+  * **Watermark PDF:** Tambahkan teks *watermark* yang transparan dan berulang (diagonal) atau di tengah pada semua halaman PDF.
 
-Input Fleksibel: Mendukung unggah, drag & drop, dan paste file langsung ke area kerja.
+  * **Watermark Gambar:** Tambahkan teks *watermark* pada file gambar PNG atau JPG.
 
-Teknologi yang Digunakan
+  * **Input Fleksibel:** Mendukung unggah, *drag & drop*, dan *paste* file langsung ke area kerja.
 
-Aplikasi ini menggunakan pustaka JavaScript pihak ketiga yang dimuat via CDN, menjadikannya sangat ringan dan mudah di-deploy:
+## Teknologi yang Digunakan
 
-Tailwind CSS: Untuk gaya dan desain yang responsif.
+Aplikasi ini menggunakan pustaka JavaScript pihak ketiga yang dimuat via CDN, menjadikannya sangat ringan dan mudah di-*deploy*:
 
-PDF.js: Untuk merender file PDF ke elemen Canvas (digunakan untuk konversi ke gambar).
+  * **Tailwind CSS:** Untuk gaya dan desain yang responsif.
 
-PDF-lib: Untuk memodifikasi dan menambahkan watermark ke file PDF.
+  * **PDF.js:** Untuk merender file PDF ke elemen Canvas (digunakan untuk konversi ke gambar).
 
-Struktur Proyek
+  * **PDF-lib:** Untuk memodifikasi dan menambahkan *watermark* ke file PDF.
+
+## Struktur Proyek
 
 Proyek ini hanya terdiri dari file-file berikut di direktori root:
 
+```
 /
 |-- tool_konversi_watermark.html  <-- File utama aplikasi
 |-- README.md                     <-- File panduan ini
 |-- serve.json                    <-- File konfigurasi server lokal (BARU)
+```
 
+## Menjalankan Secara Lokal
 
-Menjalankan Secara Lokal
+Anda dapat menjalankan aplikasi ini menggunakan server web lokal sederhana (seperti `serve` dari NPM) untuk memastikan semua fitur (terutama operasi file) berfungsi dengan benar.
 
-Anda dapat menjalankan aplikasi ini menggunakan server web lokal sederhana (seperti serve dari NPM) untuk memastikan semua fitur (terutama operasi file) berfungsi dengan benar.
+### 1\. Prasyarat
 
-1. Prasyarat
+Pastikan Anda telah menginstal [Node.js](https://nodejs.org/) dan NPM.
 
-Pastikan Anda telah menginstal Node.js dan NPM.
+### 2\. Instalasi `serve`
 
-2. Instalasi serve
+`serve` adalah server statis ringan yang mudah digunakan:
 
-serve adalah server statis ringan yang mudah digunakan:
-
+```bash
 npm install -g serve
+```
 
+### 3\. Menjalankan Server
 
-3. Menjalankan Server
+Dengan adanya file `serve.json`, `serve` akan secara otomatis menggunakan port yang telah Anda atur di sana (saat ini **Port 8080**).
 
-Dengan adanya file serve.json, serve akan secara otomatis menggunakan port yang telah Anda atur di sana (saat ini Port 8080).
+1.  Buka terminal di dalam direktori yang berisi `tool_konversi_watermark.html` dan `serve.json`.
 
-Buka terminal di dalam direktori yang berisi tool_konversi_watermark.html dan serve.json.
+2.  Jalankan perintah berikut (tanpa argumen port):
 
-Jalankan perintah berikut (tanpa argumen port):
+    ```bash
+    serve .
+    ```
 
-serve .
+Aplikasi akan tersedia di: `http://localhost:8080`.
 
+> **Mengubah Port Default:** Untuk mengubah port, cukup edit nilai `"port"` di dalam file `serve.json`.
 
-Aplikasi akan tersedia di: http://localhost:8080.
+## Deployment ke GitHub Pages
 
-Mengubah Port Default: Untuk mengubah port, cukup edit nilai "port" di dalam file serve.json.
+Karena aplikasi ini *client-side* murni, *deployment* sangat mudah:
 
-Deployment ke GitHub Pages
+1.  **Buat Repositori:** Buat repositori baru di GitHub (misalnya, `pdf-image-utility`).
 
-Karena aplikasi ini client-side murni, deployment sangat mudah:
+2.  **Unggah File:** Unggah ketiga file (`tool_konversi_watermark.html`, `README.md`, dan `serve.json`) ke repositori tersebut.
 
-Buat Repositori: Buat repositori baru di GitHub (misalnya, pdf-image-utility).
+3.  **Atur GitHub Pages:**
 
-Unggah File: Unggah ketiga file (tool_konversi_watermark.html, README.md, dan serve.json) ke repositori tersebut.
+      * Buka **Settings** repositori Anda.
 
-Atur GitHub Pages:
+      * Pilih **Pages** di menu samping.
 
-Buka Settings repositori Anda.
+      * Pada bagian **Source**, pilih `Deploy from a branch` dan pastikan **Branch** diatur ke `main` (atau `master`) dan folder diatur ke `/(root)`.
 
-Pilih Pages di menu samping.
+      * Klik **Save**.
 
-Pada bagian Source, pilih Deploy from a branch dan pastikan Branch diatur ke main (atau master) dan folder diatur ke /(root).
-
-Klik Save.
-
-GitHub Pages akan membutuhkan waktu beberapa menit untuk membangun dan menayangkan situs Anda. Aplikasi Anda akan tersedia di URL seperti: https://<username>.github.io/pdf-image-utility/tool_konversi_watermark.html
+GitHub Pages akan membutuhkan waktu beberapa menit untuk membangun dan menayangkan situs Anda. Aplikasi Anda akan tersedia di URL seperti: `https://<username>.github.io/pdf-image-utility/tool_konversi_watermark.html`
+"""
