@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tandain-PDF | Aplikasi Watermark PDF</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Konfigurasi Tailwind untuk font Inter -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* Gaya dasar untuk drag and drop area */
+        #dropzone {
+            border: 2px dashed #9ca3af;
+            transition: all 0.2s ease-in-out;
+        }
+        #dropzone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        /* Gaya untuk area canvas pratinjau */
+        #preview-area {
+            min-height: 400px;
+            max-height: 70vh;
+            overflow-y: auto;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+    </style>
+    <!-- Load pdf-lib (untuk modifikasi PDF) -->
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- Load pdfjs-dist (untuk pratinjau PDF di browser) -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+</head>
+<body class="bg-gray-50 font-sans p-4 sm:p-8">
+
+    <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Tandain-PDF</h1>
+
+    <div id="app-container" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Panel Kiri: Pratinjau & Input File -->
+        <div class="lg:col-span-2 space-y-4">
+            <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Pratinjau</h2>
+
+            <!-- Dropzone & File Input -->
+            <div id="dropzone" class="p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition duration-200">
+                <div class="text-center space-y-3">
+                    <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.884-7.854A5.5 5.5 0 0115 7.5a4.5 4.5 0 011.5 8.75m-1.5 0h-5.5m5.5 0a4 4 0 01-8.5 0m8.5 0h2.5m-2.5 0H12m0 0a4 4 0 01-7-3m7 3a4 4 0 00-7-3m7 3h-2.5" />
+                    </svg>
+                    <p class="text-base text-gray-600 font-medium">Tarik & lepaskan atau klik untuk memilih file PDF</p>
+                    <input type="file" id="fileInput" accept="application/pdf" class="hidden">
+                    <button onclick="document.getElementById('fileInput').click()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition duration-150 shadow-md">
+                        Pilih File PDF
+                    </button>
+                    <!-- Input Password (tersembunyi secara default) -->
+                    <div id="password-section" class="mt-4 hidden max-w-sm mx-auto">
+                        <label for="pdfPassword" class="block text-sm font-medium text-gray-700">Password PDF (jika terproteksi)</label>
+                        <input type="password" id="pdfPassword" placeholder="Masukkan password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+                        <button id="applyPasswordBtn" class="mt-2 w-full px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600 transition duration-150">
+                            Buka & Terapkan Watermark
+                        </button>
+                        <p id="passwordError" class="text-xs text-red-500 mt-1 hidden">Password salah atau file tidak dapat dimuat.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Area Pratinjau PDF -->
+            <div id="preview-area">
+                <p id="preview-message" class="p-4 text-gray-500 text-center text-sm">
+                    Silakan unggah file PDF untuk melihat pratinjau. Pratinjau akan muncul di sini setelah watermark diterapkan.
+                </p>
+            </div>
+
+            <!-- Informasi Keamanan -->
+            <div class="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium shadow-inner">
+                <p>Tidak ada data yang diupload ke server. Semua proses berjalan di browser device kamu (menggunakan JavaScript lokal).</p>
+            </div>
+
+            <!-- Tombol Download (setelah watermark diterapkan) -->
+            <button id="downloadBtn" class="w-full px-6 py-3 text-lg font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-150 shadow-xl opacity-50 cursor-not-allowed" disabled>
+                <svg id="download-icon" class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2v-4a2 2 0 012-2h10a2 2 0 012 2v4a2 2 0 01-2 2z"></path></svg>
+                <span id="download-text">Download File Watermark (Belum Siap)</span>
+            </button>
+        </div>
+
+        <!-- Panel Kanan: Pengaturan Watermark -->
+        <div class="space-y-6 lg:col-span-1 p-6 bg-white rounded-lg shadow-xl h-fit">
+            <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Pengaturan Watermark</h2>
+
+            <!-- Input Teks Watermark -->
+            <div class="space-y-1">
+                <label for="watermarkText" class="text-sm font-medium text-gray-700">Teks Watermark</label>
+                <input type="text" id="watermarkText" value="Tandain-PDF" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border" placeholder="Masukkan teks watermark" oninput="applyWatermark()">
+            </div>
+
+            <!-- Opacity & Warna Teks -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label for="opacity" class="text-sm font-medium text-gray-700">Opacity: <span id="opacityValue">10%</span></label>
+                    <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('opacityValue').textContent = (this.value * 100).toFixed(0) + '%'; applyWatermark()">
+                </div>
+                <div class="space-y-1">
+                    <label for="textColor" class="text-sm font-medium text-gray-700">Warna Teks</label>
+                    <input type="color" id="textColor" value="#000000" class="w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-1 border" oninput="applyWatermark()">
+                </div>
+            </div>
+
+            <!-- Ukuran Font & Rotasi -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label for="fontSize" class="text-sm font-medium text-gray-700">Ukuran Font (px)</label>
+                    <input type="number" id="fontSize" value="54" min="10" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border" oninput="applyWatermark()">
+                </div>
+                <div class="space-y-1">
+                    <label for="rotation" class="text-sm font-medium text-gray-700">Rotasi (°)</label>
+                    <input type="number" id="rotation" value="45" min="-90" max="90" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border" oninput="applyWatermark()">
+                </div>
+            </div>
+
+            <!-- Pola & Font -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label for="pattern" class="text-sm font-medium text-gray-700">Pola</label>
+                    <select id="pattern" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white" onchange="applyWatermark()">
+                        <option value="single">Tunggal (Single)</option>
+                        <option value="tile" selected>Berulang (Tile)</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label for="fontType" class="text-sm font-medium text-gray-700">Font</label>
+                    <!-- pdf-lib hanya support font yang di-embed, jadi saya batasi ke font standard -->
+                    <select id="fontType" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white" onchange="applyWatermark()">
+                        <option value="Helvetica" selected>System Default (Helvetica)</option>
+                        <option value="TimesRoman">Times Roman</option>
+                        <option value="Courier">Courier</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Opsi Password Output -->
+            <div class="space-y-1 pt-4 border-t">
+                <label class="text-sm font-semibold text-gray-700 block mb-2">Opsi Simpan File Output</label>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="addPasswordOutput" class="rounded text-blue-600 focus:ring-blue-500" onchange="toggleOutputPassword()">
+                    <label for="addPasswordOutput" class="text-sm font-medium text-gray-700">Tambahkan Password ke File Hasil</label>
+                </div>
+                <div id="outputPasswordSection" class="mt-2 hidden">
+                    <input type="password" id="outputPassword" placeholder="Password untuk file hasil" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="hidden p-4 bg-yellow-100 text-yellow-700 rounded-lg text-sm text-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-yellow-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Sedang menerapkan watermark...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set workerSrc untuk pdfjs-dist
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+
+        // Variabel Global
+        let uploadedPdfBytes = null;
+        let watermarkedPdfBytes = null;
+        let currentFileName = 'watermarked.pdf';
+
+        const { PDFDocument, rgb, degrees } = PDFLib; 
+
+        // --- UTILITY FUNCTIONS ---
+
+        /**
+         * Konversi nilai hex color ke nilai RGB 0-1 untuk pdf-lib
+         * @param {string} hex - Kode warna hex (#rrggbb)
+         * @returns {object} {r, g, b}
+         */
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16) / 255,
+                g: parseInt(result[2], 16) / 255,
+                b: parseInt(result[3], 16) / 255
+            } : { r: 0, g: 0, b: 0 }; // Default hitam
+        }
+
+        /**
+         * Tampilkan pratinjau PDF yang sudah di-watermark ke area preview (Canvas)
+         */
+        async function renderWatermarkedPdf() {
+            const previewArea = document.getElementById('preview-area');
+            const previewMessage = document.getElementById('preview-message');
+            
+            // Perbaikan: Pastikan elemen previewArea tidak kosong sebelum dibersihkan.
+            // Elemen previewMessage diambil, tetapi akan dihapus pada baris berikutnya.
+            // Cukup hapus kontennya saja.
+            previewArea.innerHTML = ''; // Bersihkan pratinjau lama
+            
+            if (!watermarkedPdfBytes) {
+                // Jika tidak ada bytes, kembalikan pesan "Pratinjau tidak tersedia"
+                previewArea.innerHTML = '<p id="preview-message" class="p-4 text-gray-500 text-center text-sm">Pratinjau tidak tersedia.</p>';
+                return;
+            }
+
+            try {
+                const pdfData = new Uint8Array(watermarkedPdfBytes);
+                const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+                const pdf = await loadingTask.promise;
+                
+                // Hanya tampilkan 3 halaman pertama untuk kecepatan pratinjau
+                const pagesToRender = Math.min(pdf.numPages, 3); 
+
+                for (let i = 1; i <= pagesToRender; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.0 });
+
+                    // Buat Canvas untuk setiap halaman
+                    const canvasWrapper = document.createElement('div');
+                    canvasWrapper.className = 'w-full p-4 border-b border-gray-200 last:border-b-0 flex justify-center';
+                    
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    
+                    // Sesuaikan ukuran canvas dengan lebar container
+                    const containerWidth = previewArea.clientWidth - 32; // - padding
+                    const scale = containerWidth / viewport.width;
+                    const scaledViewport = page.getViewport({ scale: scale });
+
+                    canvas.height = scaledViewport.height;
+                    canvas.width = scaledViewport.width;
+                    
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.height = 'auto';
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: scaledViewport
+                    };
+                    
+                    canvasWrapper.appendChild(canvas);
+                    previewArea.appendChild(canvasWrapper);
+
+                    await page.render(renderContext).promise;
+                }
+
+                if (pdf.numPages > pagesToRender) {
+                    const info = document.createElement('p');
+                    info.className = 'p-2 text-xs text-center text-gray-500';
+                    info.textContent = `(${pdf.numPages - pagesToRender} halaman lainnya tidak ditampilkan dalam pratinjau)`;
+                    previewArea.appendChild(info);
+                }
+
+
+            } catch (error) {
+                console.error("Gagal merender PDF:", error);
+                previewArea.innerHTML = '<p class="p-4 text-red-500 text-center text-sm">Gagal memuat pratinjau. File mungkin terkorupsi atau terenkripsi.</p>';
+            }
+        }
+
+        // --- WATERMARK LOGIC ---
+
+        /**
+         * Fungsi utama untuk menerapkan watermark ke PDF
+         */
+        async function applyWatermark(fileBytes = uploadedPdfBytes, inputPassword = null) {
+            if (!fileBytes) return;
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const downloadText = document.getElementById('download-text');
+            const passwordError = document.getElementById('passwordError');
+
+            loadingIndicator.classList.remove('hidden');
+            downloadBtn.disabled = true;
+            downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            downloadText.textContent = 'Download File Watermark (Sedang diproses...)';
+            passwordError.classList.add('hidden');
+            
+            try {
+                // 1. Ambil Pengaturan
+                const text = document.getElementById('watermarkText').value;
+                const opacity = parseFloat(document.getElementById('opacity').value);
+                const hexColor = document.getElementById('textColor').value;
+                const fontSize = parseInt(document.getElementById('fontSize').value);
+                const rotation = parseInt(document.getElementById('rotation').value);
+                const pattern = document.getElementById('pattern').value;
+                const fontType = document.getElementById('fontType').value;
+                const outputPassword = document.getElementById('addPasswordOutput').checked ? document.getElementById('outputPassword').value : null;
+
+                const colorRgb = hexToRgb(hexColor);
+
+                // 2. Muat Dokumen PDF
+                let pdfDoc;
+                try {
+                    // Coba muat dengan atau tanpa password
+                    const loadOptions = inputPassword ? { password: inputPassword } : {};
+                    pdfDoc = await PDFDocument.load(fileBytes, loadOptions);
+                } catch (e) {
+                    if (e.message.includes('encrypted')) {
+                        // Jika gagal muat karena terenkripsi, minta password
+                        document.getElementById('password-section').classList.remove('hidden');
+                        document.getElementById('pdfPassword').value = inputPassword || ''; // Isi ulang password yang dicoba
+                        throw new Error("File terenkripsi, masukkan password.");
+                    } else if (e.message.includes('Incorrect password')) {
+                        // Jika password salah
+                        passwordError.textContent = "Password salah. Coba lagi.";
+                        passwordError.classList.remove('hidden');
+                        document.getElementById('pdfPassword').value = '';
+                        throw new Error("Password salah.");
+                    } else {
+                        throw e; // Lemparkan error lain
+                    }
+                }
+
+                // Jika berhasil dimuat, sembunyikan kolom password
+                document.getElementById('password-section').classList.add('hidden');
+                passwordError.classList.add('hidden');
+
+                // 3. Muat Font
+                let customFont = null;
+                switch (fontType) {
+                    case 'TimesRoman':
+                        customFont = await pdfDoc.embedFont(PDFLib.StandardFonts.TimesRoman); 
+                        break;
+                    case 'Courier':
+                        customFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Courier); 
+                        break;
+                    default:
+                    case 'Helvetica':
+                        customFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica); 
+                        break;
+                }
+                
+                // 4. Proses Watermark per Halaman
+                const pages = pdfDoc.getPages();
+                for (const page of pages) {
+                    const { width, height } = page.getSize();
+                    
+                    const textWidth = customFont.widthOfTextAtSize(text, fontSize);
+                    // MENGHINDARI pemanggilan fungsi height yang bermasalah. Menggunakan fontSize sebagai dasar tinggi teks (textBaseHeight) untuk perhitungan tata letak tiling.
+                    const textBaseHeight = fontSize; 
+                    
+                    // 5. Terapkan Watermark ke Halaman
+                    const centerRotateX = width / 2;
+                    const centerRotateY = height / 2;
+                    
+                    const diagonal = Math.sqrt(width * width + height * height);
+
+                    if (pattern === 'single') {
+                        // Pola Tunggal: Letakkan di tengah dan rotasi
+                        page.drawText(text, {
+                            x: centerRotateX - textWidth / 2,
+                            // Menggunakan textBaseHeight untuk penempatan vertikal
+                            y: centerRotateY - textBaseHeight / 2, 
+                            size: fontSize,
+                            font: customFont,
+                            color: rgb(colorRgb.r, colorRgb.g, colorRgb.b),
+                            opacity: opacity,
+                            rotate: degrees(rotation),
+                        });
+                    } else {
+                        // Pola Berulang (Tile): Ulangi watermark di seluruh halaman
+                        // Mengatur spacing yang lebih dinamis berdasarkan ukuran font dan tinggi baris
+                        const hSpace = textWidth * 1.5;
+                        // Menggunakan 3x tinggi dasar (fontSize) untuk jarak vertikal yang lebih baik
+                        const vSpace = textBaseHeight * 3; 
+                        
+                        // Hitung jumlah kolom dan baris yang dibutuhkan di area diagonal
+                        const numCols = Math.ceil(diagonal / hSpace) + 1;
+                        const numRows = Math.ceil(diagonal / vSpace) + 1;
+
+                        // Tentukan titik awal (start) di luar batas kiri/bawah halaman
+                        const startX = centerRotateX - (numCols * hSpace) / 2;
+                        const startY = centerRotateY - (numRows * vSpace) / 2;
+
+                        for (let r = 0; r < numRows; r++) {
+                            for (let c = 0; c < numCols; c++) {
+                                // Koordinat untuk meletakkan watermark
+                                const x = startX + c * hSpace;
+                                const y = startY + r * vSpace;
+                                
+                                page.drawText(text, {
+                                    x: x,
+                                    y: y,
+                                    size: fontSize,
+                                    font: customFont,
+                                    color: rgb(colorRgb.r, colorRgb.g, colorRgb.b),
+                                    opacity: opacity,
+                                    rotate: degrees(rotation),
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // 6. Serialisasi (Simpan) Dokumen
+                let saveOptions = {};
+                if (outputPassword) {
+                    saveOptions = {
+                        ownerPassword: outputPassword,
+                        userPassword: outputPassword, // Biasanya user dan owner password disamakan
+                        // Opsional: set permissions
+                        permissions: [
+                            PDFLib.AcroForm.UsageRights, 
+                            PDFLib.Assembly.UsageRights, 
+                            PDFLib.DocumentSecurity.UsageRights, 
+                            PDFLib.ScreenReaders.UsageRights, 
+                        ]
+                    };
+                }
+
+                watermarkedPdfBytes = await pdfDoc.save(saveOptions);
+
+                // 7. Update UI
+                await renderWatermarkedPdf();
+                
+                downloadBtn.disabled = false;
+                downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                downloadText.textContent = 'Download File Watermark';
+                
+            } catch (error) {
+                console.error("Kesalahan Watermark:", error);
+                // Hanya tampilkan error ke user jika bukan masalah password yang sudah ditangani
+                if (!error.message.includes('File terenkripsi') && !error.message.includes('Password salah')) {
+                    const previewArea = document.getElementById('preview-area');
+                    previewArea.innerHTML = `<p class="p-4 text-red-500 text-center text-sm">PROSES GAGAL: ${error.message || 'Terjadi kesalahan saat menerapkan watermark.'}</p>`;
+                }
+                downloadBtn.disabled = true;
+                downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                downloadText.textContent = 'Download File Watermark (Gagal)';
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+
+        // --- EVENT HANDLERS ---
+        
+        // Handle Drag & Drop
+        const dropzone = document.getElementById('dropzone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false); // Global prevent
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => dropzone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => dropzone.classList.remove('dragover'), false);
+        });
+
+        dropzone.addEventListener('drop', handleDrop, false);
+        document.getElementById('fileInput').addEventListener('change', handleFileInput);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            processFile(files[0]);
+        }
+
+        function handleFileInput(e) {
+            processFile(e.target.files[0]);
+        }
+
+        // Handle Paste (Optional, only handles Paste File)
+        document.addEventListener('paste', (e) => {
+            if (e.clipboardData.files.length > 0) {
+                const file = e.clipboardData.files[0];
+                if (file.type === 'application/pdf') {
+                    processFile(file);
+                }
+            }
+        });
+
+        /**
+         * Membaca dan memproses file PDF
+         */
+        async function processFile(file) {
+            if (!file || file.type !== 'application/pdf') {
+                // Gunakan notifikasi UI custom, bukan alert()
+                const previewArea = document.getElementById('preview-area');
+                previewArea.innerHTML = '<p class="p-4 text-red-500 text-center text-sm">File yang diunggah harus berformat PDF.</p>';
+                return;
+            }
+            
+            currentFileName = file.name.replace('.pdf', '_watermarked.pdf');
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                uploadedPdfBytes = e.target.result;
+                // Coba terapkan watermark tanpa password
+                await applyWatermark(uploadedPdfBytes);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Handle Tombol Terapkan Password
+        document.getElementById('applyPasswordBtn').addEventListener('click', async () => {
+            const password = document.getElementById('pdfPassword').value;
+            // Coba terapkan watermark lagi dengan password
+            await applyWatermark(uploadedPdfBytes, password);
+        });
+
+        // Toggle input password output
+        function toggleOutputPassword() {
+            document.getElementById('outputPasswordSection').classList.toggle('hidden', !document.getElementById('addPasswordOutput').checked);
+        }
+        window.toggleOutputPassword = toggleOutputPassword; // Expose to global scope for HTML
+
+        // Handle Download Button
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (watermarkedPdfBytes) {
+                const blob = new Blob([watermarkedPdfBytes], { type: 'application/pdf' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = currentFileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }
+        });
+        
+        // Expose to global scope for HTML events
+        window.applyWatermark = applyWatermark; 
+
+    </script>
+
+</body>
+</html>
