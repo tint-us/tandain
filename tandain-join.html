@@ -146,17 +146,17 @@
                 </div>
                 <div class="p-5 space-y-5">
                     
-                    <!-- Text Input (Placeholder Update) -->
+                    <!-- Text Input -->
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Teks Watermark</label>
                         <input id="img-text" type="text" placeholder="WATERMARK DI SINI" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border transition duration-150">
                     </div>
 
-                    <!-- Row 1 (Opacity & Color Update) -->
+                    <!-- Row 1 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Opacity (0-100)</label>
-                            <input id="img-opacity" type="number" min="0" max="100" value="5" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+                            <input id="img-opacity" type="number" min="0" max="100" value="20" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Warna</label>
@@ -175,7 +175,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Rotasi (Derajat)</label>
-                            <input id="img-angle" type="number" min="-360" max="360" value="-45" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+                            <input id="img-angle" type="number" min="-360" max="360" value="45" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                     </div>
 
@@ -262,22 +262,22 @@
             <!-- RIGHT PANEL: SETTINGS -->
             <section class="it-panel p-0 shadow-sm h-fit">
                 <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                    <h2 class="font-semibold text-gray-700">Pengaturan PDF</h2>
+                    <h2 class="font-semibold text-gray-700">Pengaturan</h2>
                 </div>
                 
                 <div class="p-5 space-y-5">
                     
-                    <!-- Text Input (Placeholder Update) -->
+                    <!-- Text Input -->
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Teks Watermark</label>
                         <input id="pdf-text" type="text" placeholder="WATERMARK DI SINI" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border transition duration-150">
                     </div>
 
-                    <!-- Row 1 (Opacity & Color Update) -->
+                    <!-- Row 1 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Opacity (0-100)</label>
-                            <input id="pdf-opacity" type="number" min="0" max="100" value="5" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+                            <input id="pdf-opacity" type="number" min="0" max="100" value="20" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Warna</label>
@@ -291,11 +291,11 @@
                     <!-- Row 2 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Ukuran Font</label>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Ukuran Font (px)</label>
                             <input id="pdf-size" type="number" value="54" min="8" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Rotasi (°)</label>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Rotasi (Derajat)</label>
                             <input id="pdf-angle" type="number" value="45" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                     </div>
@@ -305,21 +305,21 @@
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Pola</label>
                             <select id="pdf-pattern" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
-                                <option value="tile">Tile (Berulang)</option>
-                                <option value="single">Single (Tengah)</option>
+                                <option value="tile">Berulang (Tile)</option>
+                                <option value="single">Satu Teks (Center)</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Font</label>
                             <select id="pdf-font" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
-                                <option value="Helvetica">Helvetica</option>
+                                <option value="Helvetica">System Default</option>
                                 <option value="TimesRoman">Times Roman</option>
                                 <option value="Courier">Courier</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Password Output Option -->
+                    <!-- Password Output Option (Kept small but aligned) -->
                     <div class="pt-4 border-t border-gray-100">
                         <div class="flex items-center gap-2 mb-2">
                             <input type="checkbox" id="pdf-chk-pass" class="rounded text-blue-600 focus:ring-blue-500 border-gray-300">
@@ -328,21 +328,26 @@
                         <input type="password" id="pdf-out-pass" placeholder="Password untuk file hasil..." class="hidden w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border text-sm">
                     </div>
 
-                    <!-- Actions -->
-                    <div class="pt-2">
-                        <button id="pdf-btn-download" disabled class="w-full py-2.5 bg-gray-100 text-gray-400 font-medium rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-not-allowed text-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                            <span>Download PDF</span>
-                        </button>
+                    <!-- Actions (Updated to Match Image Style) -->
+                    <div class="pt-2 flex gap-3">
+                        <!-- Reset Button Added -->
+                        <button id="pdf-btn-reset" class="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Reset</button>
                         
-                        <!-- Loading Indicator -->
-                        <div id="pdf-loading" class="hidden mt-2 p-2 bg-yellow-50 text-yellow-700 rounded-lg text-xs text-center border border-yellow-200 flex justify-center items-center">
-                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Sedang memproses...
-                        </div>
+                        <div class="flex-grow"></div>
+                        
+                        <!-- Download Button Aligned Right -->
+                        <button id="pdf-btn-download" disabled class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                            Download PDF
+                        </button>
+                    </div>
+                    
+                    <!-- Loading Indicator -->
+                    <div id="pdf-loading" class="hidden mt-2 p-2 bg-yellow-50 text-yellow-700 rounded-lg text-xs text-center border border-yellow-200 flex justify-center items-center">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sedang memproses...
                     </div>
 
                 </div>
@@ -421,7 +426,7 @@
                 
                 const angleVal = parseFloat(el['img-angle'].value)||0;
                 const a = angleVal * Math.PI/180;
-                const op = clamp(parseInt(el['img-opacity'].value||5,10),0,100)/100;
+                const op = clamp(parseInt(el['img-opacity'].value||20,10),0,100)/100;
                 const fs = clamp(parseInt(el['img-size'].value||54,10),8,2048);
                 const fontName = el['img-font'].value;
                 const col = el['img-color'].value;
@@ -483,8 +488,8 @@
                 st.img=null; cv.width=300; cv.height=150; 
                 el['img-dl-png'].disabled=el['img-dl-jpg'].disabled=true;
                 el['img-meta'].textContent=''; el['img-text'].value=''; // Value reset to empty
-                el['img-opacity'].value=5; el['img-color'].value='#808080'; // New Defaults
-                el['img-size'].value=54; el['img-angle'].value=-45;
+                el['img-opacity'].value=20; el['img-color'].value='#808080'; // New Defaults
+                el['img-size'].value=54; el['img-angle'].value=45;
                 draw();
             };
             
@@ -510,6 +515,7 @@
                 file: 'pdf-file',
                 preview: 'pdf-preview-area',
                 dlBtn: 'pdf-btn-download',
+                resetBtn: 'pdf-btn-reset', // NEW RESET BTN
                 text: 'pdf-text',
                 opacity: 'pdf-opacity',
                 color: 'pdf-color',
@@ -539,8 +545,6 @@
                 
                 ui.loading.classList.remove('hidden');
                 ui.dlBtn.disabled = true;
-                ui.dlBtn.classList.add('cursor-not-allowed', 'bg-gray-100', 'text-gray-400');
-                ui.dlBtn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
                 
                 try {
                     // Load Doc
@@ -562,7 +566,7 @@
 
                     // Params: use Value OR Placeholder
                     const textStr = ui.text.value || 'WATERMARK DI SINI';
-                    const opacityVal = parseInt(ui.opacity.value || 5) / 100;
+                    const opacityVal = parseInt(ui.opacity.value || 20) / 100;
                     const colorVal = hexToRgb(ui.color.value);
                     const sizeVal = parseInt(ui.size.value || 50);
                     const angleVal = parseInt(ui.angle.value || 45);
@@ -629,9 +633,6 @@
 
                     // Enable DL
                     ui.dlBtn.disabled = false;
-                    ui.dlBtn.classList.remove('cursor-not-allowed', 'bg-gray-100', 'text-gray-400');
-                    ui.dlBtn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
-                    ui.dlBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Download PDF`;
 
                 } catch (err) {
                     if(err.message !== 'Encrypted') console.error(err);
@@ -700,6 +701,20 @@
                 if(ui.chkPass.checked) ui.outPass.classList.remove('hidden');
                 else ui.outPass.classList.add('hidden');
                 applyWatermark();
+            });
+
+            // Reset Button
+            ui.resetBtn.addEventListener('click', () => {
+                ui.text.value = '';
+                ui.opacity.value = 20;
+                ui.color.value = '#808080';
+                ui.size.value = 54;
+                ui.angle.value = 45;
+                ui.pattern.value = 'tile';
+                ui.font.value = 'Helvetica';
+                
+                // If there is a file loaded, re-apply watermark with defaults
+                if(watermarkedBytes || uploadedBytes) applyWatermark();
             });
 
             // Unlock btn
