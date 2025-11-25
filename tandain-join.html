@@ -499,7 +499,7 @@
 
 
         // ==========================================
-        // 2. PDF WATERMARK LOGIC
+        // 2. PDF WATERMARK LOGIC (REVISED)
         // ==========================================
         (function() {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
@@ -508,6 +508,7 @@
             let uploadedBytes = null;
             let watermarkedBytes = null;
             let currentName = 'document.pdf';
+            let debounceTimer = null; // Fix: Debounce
 
             // UI Elements
             const ids = {
@@ -515,7 +516,7 @@
                 file: 'pdf-file',
                 preview: 'pdf-preview-area',
                 dlBtn: 'pdf-btn-download',
-                resetBtn: 'pdf-btn-reset', // NEW RESET BTN
+                resetBtn: 'pdf-btn-reset',
                 text: 'pdf-text',
                 opacity: 'pdf-opacity',
                 color: 'pdf-color',
@@ -539,6 +540,14 @@
                 return result ? { r: parseInt(result[1], 16)/255, g: parseInt(result[2], 16)/255, b: parseInt(result[3], 16)/255 } : { r:0, g:0, b:0 };
             }
 
+            // Trigger wrapper with debounce to prevent crashing on rapid input changes
+            function triggerWatermarkUpdate() {
+                if(debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    if(uploadedBytes) applyWatermark();
+                }, 300); // 300ms delay
+            }
+
             // Core Logic
             async function applyWatermark(fileBytes = uploadedBytes, password = null) {
                 if (!fileBytes) return;
@@ -547,24 +556,26 @@
                 ui.dlBtn.disabled = true;
                 
                 try {
+                    // Reset previous result to avoid stale data
+                    watermarkedBytes = null;
+
                     // Load Doc
                     let pdfDoc;
                     try {
                         const opts = password ? { password } : {};
                         pdfDoc = await PDFDocument.load(fileBytes, opts);
-                        // Success loading? Hide password prompt
                         ui.passSec.classList.add('hidden');
                         ui.passErr.classList.add('hidden');
                     } catch (e) {
                         if (e.message.includes('encrypted')) {
                             ui.passSec.classList.remove('hidden');
-                            if(password) ui.passErr.classList.remove('hidden'); // Tried but failed
+                            if(password) ui.passErr.classList.remove('hidden');
                             throw new Error('Encrypted');
                         }
                         throw e;
                     }
 
-                    // Params: use Value OR Placeholder
+                    // Params
                     const textStr = ui.text.value || 'WATERMARK DI SINI';
                     const opacityVal = parseInt(ui.opacity.value || 20) / 100;
                     const colorVal = hexToRgb(ui.color.value);
@@ -595,22 +606,29 @@
                                 rotate: degrees(angleVal)
                             });
                         } else {
-                            // Tile logic
+                            // Tile logic: Grid Based (Diagonal Coverage)
+                            // Use diagonal to ensure coverage even when rotated
                             const diag = Math.sqrt(width*width + height*height);
-                            const hSpace = textWidth * 1.5;
-                            const vSpace = textHeight * 4;
-                            const cols = Math.ceil(diag/hSpace) + 1;
-                            const rows = Math.ceil(diag/vSpace) + 1;
                             
-                            const startX = cx - (cols*hSpace)/2;
-                            const startY = cy - (rows*vSpace)/2;
-
-                            for(let r=0; r<rows; r++){
-                                for(let c=0; c<cols; c++){
+                            // Safe gap calculation
+                            // Horizontal Gap: Text width + a fraction of font size
+                            const xGap = textWidth + (sizeVal * 0.5); 
+                            
+                            // Vertical Gap: Font Size * 2 (as requested "jangan tumpuk2")
+                            const yGap = sizeVal * 2;
+                            
+                            // Determine range relative to center
+                            // Go from -diag to +diag to cover everything
+                            const limit = diag;
+                            
+                            // Loop for drawing
+                            for (let y = -limit; y <= limit; y += yGap) {
+                                for (let x = -limit; x <= limit; x += xGap) {
                                     page.drawText(textStr, {
-                                        x: startX + c*hSpace,
-                                        y: startY + r*vSpace,
-                                        size: sizeVal, font: customFont,
+                                        x: cx + x, // Center offset
+                                        y: cy + y,
+                                        size: sizeVal,
+                                        font: customFont,
                                         color: rgb(colorVal.r, colorVal.g, colorVal.b),
                                         opacity: opacityVal,
                                         rotate: degrees(angleVal)
@@ -628,7 +646,7 @@
                     }
                     watermarkedBytes = await pdfDoc.save(saveOpts);
 
-                    // Render Preview (First Page Only)
+                    // Render Preview
                     await renderPreview(watermarkedBytes);
 
                     // Enable DL
@@ -646,10 +664,9 @@
                 try {
                     const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
                     const pdf = await loadingTask.promise;
-                    const page = await pdf.getPage(1); // Page 1 only
+                    const page = await pdf.getPage(1);
                     
                     const viewport = page.getViewport({ scale: 1 });
-                    // Adjust scale based on container width minus padding (32px approx)
                     const containerWidth = ui.preview.clientWidth > 0 ? ui.preview.clientWidth : 300;
                     const scale = (containerWidth - 32) / viewport.width;
                     const scaledViewport = page.getViewport({ scale: scale });
@@ -689,10 +706,10 @@
                 if(f && f.type==='application/pdf'){ ui.file.files = e.dataTransfer.files; ui.file.dispatchEvent(new Event('change')); }
             });
 
-            // Live Update Listeners
+            // Use debounce for inputs
             ['input','change'].forEach(ev => {
                 [ui.text, ui.opacity, ui.color, ui.size, ui.angle, ui.pattern, ui.font].forEach(elm => {
-                    elm.addEventListener(ev, () => { if(watermarkedBytes || uploadedBytes) applyWatermark(); });
+                    elm.addEventListener(ev, triggerWatermarkUpdate);
                 });
             });
 
@@ -700,10 +717,10 @@
             ui.chkPass.addEventListener('change', () => {
                 if(ui.chkPass.checked) ui.outPass.classList.remove('hidden');
                 else ui.outPass.classList.add('hidden');
-                applyWatermark();
+                triggerWatermarkUpdate();
             });
 
-            // Reset Button
+            // Reset
             ui.resetBtn.addEventListener('click', () => {
                 ui.text.value = '';
                 ui.opacity.value = 20;
@@ -712,22 +729,24 @@
                 ui.angle.value = 45;
                 ui.pattern.value = 'tile';
                 ui.font.value = 'Helvetica';
-                
-                // If there is a file loaded, re-apply watermark with defaults
-                if(watermarkedBytes || uploadedBytes) applyWatermark();
+                triggerWatermarkUpdate();
             });
 
-            // Unlock btn
+            // Unlock
             ui.passBtn.addEventListener('click', () => applyWatermark(uploadedBytes, ui.passIn.value));
 
-            // Download
+            // Download Fix (Append to body)
             ui.dlBtn.addEventListener('click', () => {
                 if(!watermarkedBytes) return;
                 const blob = new Blob([watermarkedBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
+                link.href = url;
                 link.download = currentName;
+                document.body.appendChild(link); // Required for Firefox/some browsers
                 link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 100);
             });
 
         })();
