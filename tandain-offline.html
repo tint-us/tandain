@@ -4,103 +4,93 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tandain — Watermark Gambar & PDF</title>
+
+    <!-- ============================================================ -->
+    <!--  ⚙️ KONFIGURASI APLIKASI (Ubah di sini)                      -->
+    <!-- ============================================================ -->
+    <script>
+        const APP_CONFIG = {
+            enableImage: true,  // Ubah ke 'false' untuk mematikan fitur Image
+            enablePDF: false    // Ubah ke 'true' untuk mengaktifkan fitur PDF (Beta)
+        };
+    </script>
+    <!-- ============================================================ -->
     
-    <!-- [UBAH] Load Tailwind CSS (Lokal) -->
+    
+    <!-- 
+      CATATAN INSTALASI OFFLINE:
+      Pastikan file berikut ada di folder yang sama dengan file ini:
+      1. tailwindcss.js
+      2. pdf-lib.min.js (Opsional jika PDF disabled)
+      3. pdf.min.js (Opsional jika PDF disabled)
+      4. pdf.worker.min.js (Opsional jika PDF disabled)
+    -->
+
+    <!-- Load Tailwind CSS (Lokal) -->
     <script src="tailwindcss.js"></script>
     
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        primary: '#2563eb',
-                        secondary: '#0f172a'
+        // Konfigurasi Tailwind
+        try {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        fontFamily: { sans: ['Inter', 'sans-serif'] },
+                        colors: {
+                            primary: '#2563eb',
+                            secondary: '#0f172a'
+                        }
                     }
                 }
             }
+        } catch (e) {
+            console.warn("Tailwind CSS belum terload dengan benar. Pastikan file 'tailwindcss.js' ada.");
         }
     </script>
     
-    <!-- [UBAH] Load PDF Libraries (Lokal) -->
-    <script src="pdf-lib.min.js"></script>
-    <script src="pdf.min.js"></script>
+    <!-- Load PDF Libraries (Lokal) -->
+    <!-- Script ini hanya akan diload browser jika APP_CONFIG.enablePDF = true (Logika di body) -->
+    <!-- Tapi untuk kesederhanaan HTML statis, kita taruh di sini dengan error handling aman -->
+    <script src="pdf-lib.min.js" onerror="console.log('PDF Lib skip (Offline Mode/Not Found)')"></script>
+    <script src="pdf.min.js" onerror="console.log('PDF JS skip (Offline Mode/Not Found)')"></script>
 
-    <!-- Google Fonts (Opsional: Kalau internet mati font kembali ke standar sans-serif, aplikasi tetap jalan) -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Custom CSS from Image Tool (Scoped & Adapted) -->
     <style>
-        /* Variabel CSS asli dari watermark-image.html, di-scope agar tidak merusak layout utama */
+        /* Styling Global & Variabel */
         .img-tool-theme {
             --bg:#f7f9fc; --ink:#0f172a; --muted:#5b6b8b; --card:#ffffff; --line:#e6eaf2;
             --primary:#2563eb; --primary-ink:#ffffff; --accent:#0ea5e9; --surface:#eef2f7;
             --highlight-bg:#ecfccb; --highlight-ink:#365314;
         }
-        
-        /* Utility Classes khusus Image Tool */
         .it-panel { background:var(--card); border:1px solid var(--line); border-radius:14px; }
         .it-drop { border:2px dashed var(--line); border-radius:14px; padding:18px; text-align:center; background:var(--surface); transition: all 0.2s; }
         .it-drop.drag { border-color:var(--primary); background: #e0f2fe; }
         
-        /* Canvas preview styling */
         canvas.img-canvas-preview { width:100%; height:auto; background: repeating-conic-gradient(#80808022 0% 25%, transparent 0% 50%) 50% / 20px 20px; border-radius:12px; display:block; border: 1px solid var(--line); }
         
-        /* PDF Preview Area Styling to match Image Canvas */
-        #pdf-preview-area {
-            width: 100%;
-            min-height: 300px;
-            max-height: 500px;
-            overflow-y: auto;
-            background: repeating-conic-gradient(#80808022 0% 25%, transparent 0% 50%) 50% / 20px 20px;
-            border-radius: 12px;
-            border: 1px solid var(--line);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            padding: 1rem;
-        }
-        #pdf-preview-area canvas {
-            max-width: 100%;
-            height: auto;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border-radius: 4px;
-        }
-
-        /* Styling Input Number agar terlihat modern */
+        /* Styling Input Number */
         input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { 
-            opacity: 1; 
-        }
+        input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
         
-        /* Tab Active State */
-        .tab-btn.active {
-            border-bottom: 2px solid #2563eb;
-            color: #2563eb;
-            font-weight: 600;
-        }
-        .tab-btn {
-            color: #64748b;
-            font-weight: 500;
-        }
+        /* Tab Styles */
+        .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+        .tab-btn { color: #64748b; font-weight: 500; }
+        
+        /* Utility: Hide Element */
+        .hidden-force { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen flex flex-col">
 
-    <!-- HEADER & TABS -->
+    <!-- HEADER -->
     <header class="bg-white shadow-sm sticky top-0 z-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header Content with Tagline -->
             <div class="flex justify-between h-20 items-center">
                 <div class="flex items-center gap-3">
-                    <!-- Logo -->
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-2xl shadow-md">
-                        T
-                    </div>
-                    <!-- Title & Tagline -->
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-2xl shadow-md">T</div>
                     <div class="flex flex-col">
                         <h1 class="font-bold text-gray-800 text-xl leading-tight tracking-tight">Tandain</h1>
                         <p class="text-xs text-gray-500 font-medium tracking-wide">tandain dokumen biar lebih aman</p>
@@ -109,8 +99,8 @@
             </div>
             
             <!-- Tab Navigation -->
-            <div class="flex space-x-8 -mb-px overflow-x-auto border-t border-gray-100 pt-1">
-                <button onclick="switchTab('image')" id="tab-btn-image" class="tab-btn active py-3 px-1 text-sm transition-colors duration-200">
+            <div class="flex space-x-8 -mb-px overflow-x-auto border-t border-gray-100 pt-1" id="tab-container">
+                <button onclick="switchTab('image')" id="tab-btn-image" class="tab-btn py-3 px-1 text-sm transition-colors duration-200">
                     Image Watermark
                 </button>
                 <button onclick="switchTab('pdf')" id="tab-btn-pdf" class="tab-btn py-3 px-1 text-sm transition-colors duration-200">
@@ -123,11 +113,10 @@
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- ========================================== -->
-        <!-- TAB 1: IMAGE WATERMARK CONTENT             -->
+        <!-- MODULE 1: IMAGE WATERMARK                  -->
         <!-- ========================================== -->
-        <div id="tab-content-image" class="img-tool-theme grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <!-- LEFT PANEL: PREVIEW -->
+        <div id="tab-content-image" class="img-tool-theme grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+            <!-- Left: Preview -->
             <section class="it-panel p-0 overflow-hidden shadow-sm h-fit">
                 <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h2 class="font-semibold text-gray-700">Pratinjau Gambar</h2>
@@ -143,25 +132,21 @@
                         <canvas id="img-canvas" class="img-canvas-preview"></canvas>
                     </div>
                     <div class="mt-4 bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg border border-yellow-100">
-                        Proses berjalan 100% di browser kamu. Gambar tidak diupload ke server.
+                        Proses berjalan 100% offline di browser.
                     </div>
                 </div>
             </section>
 
-            <!-- RIGHT PANEL: SETTINGS -->
+            <!-- Right: Settings -->
             <section class="it-panel p-0 shadow-sm h-fit">
                 <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
                     <h2 class="font-semibold text-gray-700">Pengaturan</h2>
                 </div>
                 <div class="p-5 space-y-5">
-                    
-                    <!-- Text Input -->
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Teks Watermark</label>
                         <input id="img-text" type="text" placeholder="WATERMARK DI SINI" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border transition duration-150">
                     </div>
-
-                    <!-- Row 1 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Opacity (0-100)</label>
@@ -175,8 +160,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Row 2 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Ukuran Font (px)</label>
@@ -187,8 +170,6 @@
                             <input id="img-angle" type="number" min="-360" max="360" value="-45" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                     </div>
-
-                    <!-- Row 3 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Pola</label>
@@ -209,43 +190,33 @@
                             </select>
                         </div>
                     </div>
-
-                    <!-- Actions -->
                     <div class="pt-4 border-t border-gray-100 flex gap-3">
                         <button id="img-btn-reset" class="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Reset</button>
                         <div class="flex-grow"></div>
                         <button id="img-dl-jpg" disabled class="px-4 py-2 rounded-lg text-sm text-white bg-blue-600 hover:bg-blue-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Download JPG</button>
                         <button id="img-dl-png" disabled class="px-4 py-2 rounded-lg text-sm text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Download PNG</button>
                     </div>
-
                 </div>
             </section>
         </div>
 
-
         <!-- ========================================== -->
-        <!-- TAB 2: PDF WATERMARK CONTENT (REFACTORED) -->
+        <!-- MODULE 2: PDF WATERMARK (BETA/HIDDEN)      -->
         <!-- ========================================== -->
         <div id="tab-content-pdf" class="hidden img-tool-theme grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <!-- LEFT PANEL: PREVIEW -->
+            <!-- UI PDF DISINI (Disembunyikan via CSS & JS jika Flag mati) -->
+            <!-- Left: Preview -->
             <section class="it-panel p-0 overflow-hidden shadow-sm h-fit">
                 <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h2 class="font-semibold text-gray-700">Pratinjau PDF</h2>
                     <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200">Secure Client-Side</span>
                 </div>
-                
                 <div class="p-4">
-                    <!-- Dropzone dengan style .it-drop (sama seperti Image) -->
                     <div id="pdf-dropzone" class="it-drop cursor-pointer hover:bg-gray-100">
-                        <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
+                        <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                         <p class="text-sm text-gray-600">Klik atau drop file PDF di sini</p>
                         <input type="file" id="pdf-file" accept="application/pdf" hidden>
                     </div>
-
-                    <!-- Password Protected Section -->
                     <div id="pdf-password-section" class="hidden mt-4 max-w-sm mx-auto bg-white p-3 rounded-lg shadow-sm border border-red-100">
                         <label class="block text-xs font-medium text-gray-700 mb-2">Dokumen terproteksi password</label>
                         <div class="flex gap-2">
@@ -254,35 +225,24 @@
                         </div>
                         <p id="pdf-password-error" class="text-xs text-red-500 mt-1 hidden">Password salah.</p>
                     </div>
-
-                    <!-- Preview Area -->
                     <div class="mt-4">
                         <div id="pdf-preview-area">
                             <p id="pdf-msg-empty" class="text-gray-400 text-sm">Pratinjau halaman pertama akan muncul di sini</p>
                         </div>
                     </div>
-                    
-                    <div class="mt-4 bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg border border-yellow-100">
-                        File PDF diproses lokal di browser. Tidak ada data yang dikirim ke server.
-                    </div>
                 </div>
             </section>
 
-            <!-- RIGHT PANEL: SETTINGS -->
+            <!-- Right: Settings -->
             <section class="it-panel p-0 shadow-sm h-fit">
                 <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                    <h2 class="font-semibold text-gray-700">Pengaturan</h2>
+                    <h2 class="font-semibold text-gray-700">Pengaturan PDF</h2>
                 </div>
-                
                 <div class="p-5 space-y-5">
-                    
-                    <!-- Text Input -->
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Teks Watermark</label>
                         <input id="pdf-text" type="text" placeholder="WATERMARK DI SINI" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border transition duration-150">
                     </div>
-
-                    <!-- Row 1 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Opacity (0-100)</label>
@@ -296,8 +256,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Row 2 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Ukuran Font (px)</label>
@@ -308,8 +266,6 @@
                             <input id="pdf-angle" type="number" value="45" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                     </div>
-
-                    <!-- Row 3 -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Pola</label>
@@ -327,8 +283,6 @@
                             </select>
                         </div>
                     </div>
-
-                    <!-- Password Output Option (Kept small but aligned) -->
                     <div class="pt-4 border-t border-gray-100">
                         <div class="flex items-center gap-2 mb-2">
                             <input type="checkbox" id="pdf-chk-pass" class="rounded text-blue-600 focus:ring-blue-500 border-gray-300">
@@ -336,29 +290,15 @@
                         </div>
                         <input type="password" id="pdf-out-pass" placeholder="Password untuk file hasil..." class="hidden w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border text-sm">
                     </div>
-
-                    <!-- Actions (Updated to Match Image Style) -->
                     <div class="pt-2 flex gap-3">
-                        <!-- Reset Button Added -->
                         <button id="pdf-btn-reset" class="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Reset</button>
-                        
                         <div class="flex-grow"></div>
-                        
-                        <!-- Download Button Aligned Right -->
-                        <button id="pdf-btn-download" disabled class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-                            Download PDF
-                        </button>
+                        <button id="pdf-btn-download" disabled class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm">Download PDF</button>
                     </div>
-                    
-                    <!-- Loading Indicator -->
                     <div id="pdf-loading" class="hidden mt-2 p-2 bg-yellow-50 text-yellow-700 rounded-lg text-xs text-center border border-yellow-200 flex justify-center items-center">
-                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         Sedang memproses...
                     </div>
-
                 </div>
             </section>
         </div>
@@ -371,54 +311,98 @@
         </div>
     </footer>
 
-    <!-- LOGIC SCRIPTS -->
+    <!-- MAIN LOGIC -->
     <script>
-        // === GLOBAL TAB LOGIC ===
+        // === SYSTEM: TAB MANAGER ===
         function switchTab(tabName) {
+            // Prevent switching to disabled module
+            if (tabName === 'image' && !APP_CONFIG.enableImage) return;
+            if (tabName === 'pdf' && !APP_CONFIG.enablePDF) return;
+
             // Hide all contents
             document.getElementById('tab-content-image').classList.add('hidden');
             document.getElementById('tab-content-pdf').classList.add('hidden');
             
             // Deactivate all buttons
-            document.getElementById('tab-btn-image').classList.remove('active');
-            document.getElementById('tab-btn-pdf').classList.remove('active');
+            const btnImg = document.getElementById('tab-btn-image');
+            const btnPdf = document.getElementById('tab-btn-pdf');
+            if (btnImg) btnImg.classList.remove('active');
+            if (btnPdf) btnPdf.classList.remove('active');
             
             // Activate selected
             document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
-            document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            if (activeBtn) activeBtn.classList.add('active');
         }
+
+        // Initial State Check & Auto Switch
+        (function init() {
+            const btnImg = document.getElementById('tab-btn-image');
+            const btnPdf = document.getElementById('tab-btn-pdf');
+
+            // Apply visibility based on config
+            if (!APP_CONFIG.enableImage) {
+                if (btnImg) btnImg.style.display = 'none';
+            }
+            if (!APP_CONFIG.enablePDF) {
+                if (btnPdf) btnPdf.style.display = 'none';
+            }
+
+            // Determine default tab
+            if (APP_CONFIG.enableImage) {
+                switchTab('image');
+            } else if (APP_CONFIG.enablePDF) {
+                switchTab('pdf');
+            } else {
+                // Both disabled (Edge case)
+                document.querySelector('main').innerHTML = '<div class="text-center p-10 text-gray-500">Semua modul dinonaktifkan. Cek konfigurasi.</div>';
+            }
+        })();
 
         
         // ==========================================
-        // 1. IMAGE WATERMARK LOGIC
+        // MODULE 1: IMAGE WATERMARK LOGIC
         // ==========================================
         (function() {
+            if (!APP_CONFIG.enableImage) return; // Skip logic if disabled
+
             const st = { img:null };
             const cv = document.getElementById('img-canvas');
-            const ctx = cv.getContext('2d');
+            const ctx = cv ? cv.getContext('2d') : null;
 
             const ids = ['img-file','img-drop','img-text','img-opacity','img-color','img-size','img-angle','img-repeat','img-font','img-btn-reset','img-dl-png','img-dl-jpg','img-meta'];
-            const el = {}; ids.forEach(id => el[id] = document.getElementById(id));
+            const el = {}; 
+            ids.forEach(id => {
+                el[id] = document.getElementById(id);
+            });
+
+            if(!cv) return; 
 
             function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+            
             function loadImage(file){
                 return new Promise((resolve,reject)=>{
                     const url = URL.createObjectURL(file);
                     const img = new Image();
                     img.onload = ()=>{ URL.revokeObjectURL(url); resolve(img) };
-                    img.onerror = reject; img.src = url;
+                    img.onerror = reject; 
+                    img.src = url;
                 });
             }
 
             function computeBaseSide(textStr, fontPx, angleRad){
-                ctx.save(); ctx.font = fontPx + 'px ' + el['img-font'].value;
+                ctx.save(); 
+                ctx.font = fontPx + 'px ' + el['img-font'].value;
                 const m = ctx.measureText(textStr);
                 const textW = Math.max(1, m.width);
                 const textH = Math.max(1, (m.actualBoundingBoxAscent || fontPx*0.8) + (m.actualBoundingBoxDescent || fontPx*0.2));
                 ctx.restore();
-                const cos = Math.abs(Math.cos(angleRad)), sin = Math.abs(Math.sin(angleRad));
+                
+                const cos = Math.abs(Math.cos(angleRad));
+                const sin = Math.abs(Math.sin(angleRad));
                 const rotW = textW * cos + textH * sin;
                 const rotH = textW * sin + textH * cos;
+                
                 return Math.ceil(Math.max(rotW, rotH) + Math.max(12, Math.round(fontPx * 0.5)));
             }
 
@@ -429,7 +413,6 @@
                 ctx.clearRect(0,0,W,H);
                 ctx.drawImage(st.img,0,0,W,H);
 
-                // Use value OR placeholder as fallback for preview
                 const t = el['img-text'].value || 'WATERMARK DI SINI';
                 if(!t) return;
                 
@@ -442,9 +425,11 @@
 
                 if(el['img-repeat'].value === 'tile'){
                     const step = computeBaseSide(t, fs, a);
+                    
                     const tile = document.createElement('canvas');
                     tile.width = tile.height = step;
                     const tctx = tile.getContext('2d');
+                    
                     tctx.translate(step/2, step/2);
                     tctx.rotate(a);
                     tctx.fillStyle = col;
@@ -453,66 +438,91 @@
                     tctx.textAlign = 'center';
                     tctx.textBaseline = 'middle';
                     tctx.fillText(t,0,0);
+                    
                     const pat = ctx.createPattern(tile,'repeat');
-                    ctx.fillStyle = pat; ctx.fillRect(0,0,W,H);
+                    ctx.fillStyle = pat; 
+                    ctx.fillRect(0,0,W,H);
                 } else {
-                    ctx.save(); ctx.translate(W/2,H/2); ctx.rotate(a);
-                    ctx.globalAlpha = op; ctx.fillStyle = col;
+                    ctx.save(); 
+                    ctx.translate(W/2,H/2); 
+                    ctx.rotate(a);
+                    ctx.globalAlpha = op; 
+                    ctx.fillStyle = col;
                     ctx.font = fs + 'px ' + fontName;
-                    ctx.textAlign='center'; ctx.textBaseline='middle';
-                    ctx.fillText(t,0,0); ctx.restore();
+                    ctx.textAlign='center'; 
+                    ctx.textBaseline='middle';
+                    ctx.fillText(t,0,0); 
+                    ctx.restore();
                 }
             }
 
             // Event Listeners
             ['input','change'].forEach(ev=>{
                 ['img-text','img-opacity','img-size','img-angle','img-color','img-repeat','img-font'].forEach(id=>{
-                    el[id].addEventListener(ev, draw);
+                    if(el[id]) el[id].addEventListener(ev, draw);
                 });
             });
 
             // File Handlers
-            el['img-drop'].onclick = ()=> el['img-file'].click();
-            el['img-file'].onchange = async()=>{ if(el['img-file'].files[0]) await handleFile(el['img-file'].files[0]); };
+            if(el['img-drop']) {
+                el['img-drop'].onclick = ()=> el['img-file'].click();
+                el['img-drop'].addEventListener('dragover', e=>{e.preventDefault(); el['img-drop'].classList.add('drag');});
+                el['img-drop'].addEventListener('dragleave', ()=> el['img-drop'].classList.remove('drag'));
+                el['img-drop'].addEventListener('drop', async e=>{ 
+                    e.preventDefault(); el['img-drop'].classList.remove('drag'); 
+                    const f=e.dataTransfer.files&&e.dataTransfer.files[0]; 
+                    if(f) await handleFile(f); 
+                });
+            }
             
-            el['img-drop'].addEventListener('dragover', e=>{e.preventDefault(); el['img-drop'].classList.add('drag');});
-            el['img-drop'].addEventListener('dragleave', ()=> el['img-drop'].classList.remove('drag'));
-            el['img-drop'].addEventListener('drop', async e=>{ 
-                e.preventDefault(); el['img-drop'].classList.remove('drag'); 
-                const f=e.dataTransfer.files&&e.dataTransfer.files[0]; 
-                if(f) await handleFile(f); 
-            });
+            if(el['img-file']) {
+                el['img-file'].onchange = async()=>{ if(el['img-file'].files[0]) await handleFile(el['img-file'].files[0]); };
+            }
 
             async function handleFile(f){
                 if(!f.type.startsWith('image/')) return alert('File harus gambar.');
-                const img = await loadImage(f); st.img=img; draw();
-                el['img-dl-png'].disabled = el['img-dl-jpg'].disabled = false;
-                el['img-meta'].textContent=`${img.naturalWidth}×${img.naturalHeight}px`;
+                try {
+                    const img = await loadImage(f); 
+                    st.img=img; 
+                    draw();
+                    el['img-dl-png'].disabled = el['img-dl-jpg'].disabled = false;
+                    el['img-meta'].textContent=`${img.naturalWidth}×${img.naturalHeight}px`;
+                } catch(e) {
+                    alert("Gagal memuat gambar.");
+                }
             }
 
-            el['img-dl-png'].onclick=()=>{if(!st.img)return; const a=document.createElement('a');a.download='watermarked.png';a.href=cv.toDataURL('image/png');a.click();};
-            el['img-dl-jpg'].onclick=()=>{if(!st.img)return; const a=document.createElement('a');a.download='watermarked.jpg';a.href=cv.toDataURL('image/jpeg',0.92);a.click();};
+            if(el['img-dl-png']) el['img-dl-png'].onclick=()=>{if(!st.img)return; const a=document.createElement('a');a.download='watermarked.png';a.href=cv.toDataURL('image/png');a.click();};
+            if(el['img-dl-jpg']) el['img-dl-jpg'].onclick=()=>{if(!st.img)return; const a=document.createElement('a');a.download='watermarked.jpg';a.href=cv.toDataURL('image/jpeg',0.92);a.click();};
 
-            el['img-btn-reset'].onclick = ()=>{
+            if(el['img-btn-reset']) el['img-btn-reset'].onclick = ()=>{
                 st.img=null; cv.width=300; cv.height=150; 
                 el['img-dl-png'].disabled=el['img-dl-jpg'].disabled=true;
-                el['img-meta'].textContent=''; el['img-text'].value=''; // Value reset to empty
-                el['img-opacity'].value=20; el['img-color'].value='#808080'; // New Defaults
-                el['img-size'].value=54; el['img-angle'].value=45;
+                el['img-meta'].textContent=''; el['img-text'].value=''; 
+                el['img-opacity'].value=20; el['img-color'].value='#808080'; 
+                el['img-size'].value=54; el['img-angle'].value=-45;
                 draw();
             };
             
-            // Init blank canvas styling
-            el['img-btn-reset'].click();
+            // Init blank
+            if(el['img-btn-reset']) el['img-btn-reset'].click();
         })();
 
 
         // ==========================================
-        // 2. PDF WATERMARK LOGIC (REVISED)
+        // MODULE 2: PDF WATERMARK LOGIC
         // ==========================================
         (function() {
-            // [PERBAIKAN] Pastikan workerSrc mengarah ke file lokal 'pdf.worker.min.js'
-            // yang ada di satu folder dengan index.html
+            // Jika modul dimatikan, jangan jalankan logika PDF sama sekali
+            if (!APP_CONFIG.enablePDF) return;
+
+            // Cek ketersediaan library
+            if (typeof pdfjsLib === 'undefined' || typeof PDFLib === 'undefined') {
+                console.warn("Library PDF tidak ditemukan. Fitur PDF tidak berjalan.");
+                return;
+            }
+
+            // Config Worker Lokal
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js'; 
             
             const { PDFDocument, rgb, degrees } = PDFLib;
@@ -520,58 +530,38 @@
             let uploadedBytes = null;
             let watermarkedBytes = null;
             let currentName = 'document.pdf';
-            let debounceTimer = null; // Fix: Debounce
+            let debounceTimer = null;
 
-            // UI Elements
             const ids = {
-                drop: 'pdf-dropzone',
-                file: 'pdf-file',
-                preview: 'pdf-preview-area',
-                dlBtn: 'pdf-btn-download',
-                resetBtn: 'pdf-btn-reset',
-                text: 'pdf-text',
-                opacity: 'pdf-opacity',
-                color: 'pdf-color',
-                size: 'pdf-size',
-                angle: 'pdf-angle',
-                pattern: 'pdf-pattern',
-                font: 'pdf-font',
-                chkPass: 'pdf-chk-pass',
-                outPass: 'pdf-out-pass',
-                passSec: 'pdf-password-section',
-                passIn: 'pdf-password-input',
-                passBtn: 'pdf-btn-unlock',
-                loading: 'pdf-loading',
-                passErr: 'pdf-password-error'
+                drop: 'pdf-dropzone', file: 'pdf-file', preview: 'pdf-preview-area',
+                dlBtn: 'pdf-btn-download', resetBtn: 'pdf-btn-reset',
+                text: 'pdf-text', opacity: 'pdf-opacity', color: 'pdf-color',
+                size: 'pdf-size', angle: 'pdf-angle', pattern: 'pdf-pattern', font: 'pdf-font',
+                chkPass: 'pdf-chk-pass', outPass: 'pdf-out-pass',
+                passSec: 'pdf-password-section', passIn: 'pdf-password-input', passBtn: 'pdf-btn-unlock',
+                loading: 'pdf-loading', passErr: 'pdf-password-error'
             };
             const ui = {}; Object.keys(ids).forEach(k => ui[k] = document.getElementById(ids[k]));
 
-            // Helper
             function hexToRgb(hex) {
                 const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
                 return result ? { r: parseInt(result[1], 16)/255, g: parseInt(result[2], 16)/255, b: parseInt(result[3], 16)/255 } : { r:0, g:0, b:0 };
             }
 
-            // Trigger wrapper with debounce to prevent crashing on rapid input changes
             function triggerWatermarkUpdate() {
                 if(debounceTimer) clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     if(uploadedBytes) applyWatermark();
-                }, 300); // 300ms delay
+                }, 300);
             }
 
-            // Core Logic
             async function applyWatermark(fileBytes = uploadedBytes, password = null) {
                 if (!fileBytes) return;
-                
                 ui.loading.classList.remove('hidden');
                 ui.dlBtn.disabled = true;
                 
                 try {
-                    // Reset previous result to avoid stale data
                     watermarkedBytes = null;
-
-                    // Load Doc
                     let pdfDoc;
                     try {
                         const opts = password ? { password } : {};
@@ -587,60 +577,49 @@
                         throw e;
                     }
 
-                    // Params
                     const textStr = ui.text.value || 'WATERMARK DI SINI';
                     const opacityVal = parseInt(ui.opacity.value || 20) / 100;
                     const colorVal = hexToRgb(ui.color.value);
                     const sizeVal = parseInt(ui.size.value || 50);
                     const angleVal = parseInt(ui.angle.value || 45);
-                    const fontName = ui.font.value;
-
-                    // Font
+                    
+                    // Font Loading
                     let customFont;
-                    if(fontName === 'TimesRoman') customFont = await pdfDoc.embedFont(PDFLib.StandardFonts.TimesRoman);
-                    else if(fontName === 'Courier') customFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Courier);
+                    if(ui.font.value === 'TimesRoman') customFont = await pdfDoc.embedFont(PDFLib.StandardFonts.TimesRoman);
+                    else if(ui.font.value === 'Courier') customFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Courier);
                     else customFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
 
-                    // Draw
                     const pages = pdfDoc.getPages();
                     pages.forEach(page => {
                         const { width, height } = page.getSize();
                         const textWidth = customFont.widthOfTextAtSize(textStr, sizeVal);
-                        const textHeight = sizeVal; 
                         const cx = width/2, cy = height/2;
 
                         if (ui.pattern.value === 'single') {
                             page.drawText(textStr, {
-                                x: cx - textWidth/2, y: cy - textHeight/2,
+                                x: cx - textWidth/2, y: cy - sizeVal/2,
                                 size: sizeVal, font: customFont,
                                 color: rgb(colorVal.r, colorVal.g, colorVal.b),
                                 opacity: opacityVal,
                                 rotate: degrees(angleVal)
                             });
                         } else {
-                            // Tile logic: Grid Based (Diagonal Coverage)
-                            // Use diagonal to ensure coverage even when rotated
                             const diag = Math.sqrt(width*width + height*height);
+                            const xGap = textWidth + (sizeVal * 0.8); 
+                            const yGap = sizeVal * 3;
                             
-                            // Safe gap calculation
-                            // Horizontal Gap: Text width + a fraction of font size
-                            const xGap = textWidth + (sizeVal * 0.5); 
+                            const numCols = Math.ceil((diag * 1.2) / xGap);
+                            const numRows = Math.ceil((diag * 1.2) / yGap);
                             
-                            // Vertical Gap: Font Size * 2 (as requested "jangan tumpuk2")
-                            const yGap = sizeVal * 2;
-                            
-                            // Determine range relative to center
-                            // Go from -diag to +diag to cover everything
-                            const limit = diag;
-                            
-                            // Loop for drawing
-                            for (let y = -limit; y <= limit; y += yGap) {
-                                for (let x = -limit; x <= limit; x += xGap) {
+                            const startX = cx - (numCols * xGap) / 2;
+                            const startY = cy - (numRows * yGap) / 2;
+
+                            for(let r=0; r<numRows; r++){
+                                for(let c=0; c<numCols; c++){
                                     page.drawText(textStr, {
-                                        x: cx + x, // Center offset
-                                        y: cy + y,
-                                        size: sizeVal,
-                                        font: customFont,
+                                        x: startX + c*xGap,
+                                        y: startY + r*yGap,
+                                        size: sizeVal, font: customFont,
                                         color: rgb(colorVal.r, colorVal.g, colorVal.b),
                                         opacity: opacityVal,
                                         rotate: degrees(angleVal)
@@ -650,18 +629,13 @@
                         }
                     });
 
-                    // Save
                     const saveOpts = {};
                     if(ui.chkPass.checked && ui.outPass.value) {
                         saveOpts.userPassword = ui.outPass.value;
                         saveOpts.ownerPassword = ui.outPass.value;
                     }
                     watermarkedBytes = await pdfDoc.save(saveOpts);
-
-                    // Render Preview
                     await renderPreview(watermarkedBytes);
-
-                    // Enable DL
                     ui.dlBtn.disabled = false;
 
                 } catch (err) {
@@ -699,7 +673,6 @@
                 } catch(e) { console.error(e); }
             }
 
-            // Events
             ui.file.addEventListener('change', e => {
                 const f = e.target.files[0];
                 if(f && f.type === 'application/pdf') {
@@ -718,49 +691,37 @@
                 if(f && f.type==='application/pdf'){ ui.file.files = e.dataTransfer.files; ui.file.dispatchEvent(new Event('change')); }
             });
 
-            // Use debounce for inputs
             ['input','change'].forEach(ev => {
                 [ui.text, ui.opacity, ui.color, ui.size, ui.angle, ui.pattern, ui.font].forEach(elm => {
                     elm.addEventListener(ev, triggerWatermarkUpdate);
                 });
             });
 
-            // Password output toggle
             ui.chkPass.addEventListener('change', () => {
                 if(ui.chkPass.checked) ui.outPass.classList.remove('hidden');
                 else ui.outPass.classList.add('hidden');
                 triggerWatermarkUpdate();
             });
 
-            // Reset
             ui.resetBtn.addEventListener('click', () => {
-                ui.text.value = '';
-                ui.opacity.value = 20;
-                ui.color.value = '#808080';
-                ui.size.value = 54;
-                ui.angle.value = 45;
-                ui.pattern.value = 'tile';
-                ui.font.value = 'Helvetica';
+                ui.text.value = ''; ui.opacity.value = 20; ui.color.value = '#808080';
+                ui.size.value = 54; ui.angle.value = 45; ui.pattern.value = 'tile'; ui.font.value = 'Helvetica';
                 triggerWatermarkUpdate();
             });
 
-            // Unlock
             ui.passBtn.addEventListener('click', () => applyWatermark(uploadedBytes, ui.passIn.value));
 
-            // Download Fix (Append to body)
             ui.dlBtn.addEventListener('click', () => {
                 if(!watermarkedBytes) return;
                 const blob = new Blob([watermarkedBytes], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = url;
-                link.download = currentName;
-                document.body.appendChild(link); // Required for Firefox/some browsers
+                link.href = url; link.download = currentName;
+                document.body.appendChild(link); 
                 link.click();
                 document.body.removeChild(link);
                 setTimeout(() => URL.revokeObjectURL(url), 100);
             });
-
         })();
     </script>
 </body>
